@@ -16,18 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/* eslint-disable no-undef */
-const path = require("path");
-const fs = require("fs");
-const assert = require("assert");
-const tvmjs = require("../../dist/tvmjs.bundle")
+import { join } from 'path';
+import { readFileSync } from 'fs';
+import { expect, test, beforeEach } from 'vitest'
+import tvmjs from '../../dist/tvmjs.bundle'
 
-const wasmPath = tvmjs.wasmPath();
-const wasmSource = fs.readFileSync(path.join(wasmPath, "tvmjs_runtime.wasm"));
+let tvm;
 
-let tvm = new tvmjs.Instance(
-  new WebAssembly.Module(wasmSource),
-  tvmjs.createPolyfillWASI());
+beforeEach(() => {
+  const wasmPath = tvmjs.wasmPath();
+  const wasmSource = readFileSync(join(wasmPath, "tvmjs_runtime.wasm"));
+
+  tvm = new tvmjs.Instance(
+    new WebAssembly.Module(wasmSource),
+    tvmjs.createPolyfillWASI());
+
+  })
 
 test("object", () => {
   tvm.withNewScope(() => {
@@ -37,19 +41,19 @@ test("object", () => {
     let t = tvm.makeTVMArray([]);
     let b = tvm.makeTVMArray([a, t]);
     // assert b instanceof tvmjs.TVMArray
-    assert(b instanceof tvmjs.TVMArray);
-    assert(b.size() == 2);
+    expect(b instanceof tvmjs.TVMArray).toBe(true);
+    expect(b.size()).toBe(2);
 
     let t1 = b.get(1);
-    assert(t1.getHandle() == t.getHandle());
+    expect(t1.getHandle()).toBe(t.getHandle());
 
-    let s0 = tvm.makeString("hello world");
-    assert(s0.toString() == "hello world");
+    const s0 = tvm.makeString("hello world");
+    expect(s0.toString()).toBe("hello world");
     s0.dispose();
 
     let ret_string = tvm.getGlobalFunc("testing.ret_string");
     let s1 = ret_string("hello");
-    assert(s1.toString() == "hello");
+    expect(s1.toString()).toBe("hello");
     ret_string.dispose();
     s1.dispose();
   });

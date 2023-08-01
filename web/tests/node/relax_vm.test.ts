@@ -16,8 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/* eslint-disable no-undef */
 // Load Emscripten Module, need to change path to root/lib
+import { test } from 'vitest';
 const path = require("path");
 const fs = require("fs");
 const assert = require("assert");
@@ -31,7 +31,7 @@ const tvm = new tvmjs.Instance(
   tvmjs.createPolyfillWASI()
 );
 
-function randomArray(length, max) {
+export function randomArray(length, max) {
   return Array.apply(null, Array(length)).map(function () {
     return Math.random() * max;
   });
@@ -60,6 +60,6 @@ test("add one", () => {
   }
   tvm.endScope();
   // assert auto release scope behavior
-  assert(vm.mod.getHandle(false) == 0);
-  assert(fadd._tvmPackedCell.getHandle(false) == 0);
+  assert(vm.mod.getHandle(false) === 0);
+  assert(fadd._tvmPackedCell.getHandle(false) === 0);
 });

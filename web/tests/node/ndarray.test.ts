@@ -17,6 +17,7 @@
  * under the License.
  */
 /* eslint-disable no-undef */
+import { expect, test, vi } from 'vitest'
 const path = require("path");
 const fs = require("fs");
 const assert = require("assert");
@@ -25,7 +26,7 @@ const tvmjs = require("../../dist/tvmjs.bundle")
 const wasmPath = tvmjs.wasmPath();
 const wasmSource = fs.readFileSync(path.join(wasmPath, "tvmjs_runtime.wasm"));
 
-let tvm = new tvmjs.Instance(
+const tvm = new tvmjs.Instance(
   new WebAssembly.Module(wasmSource),
   tvmjs.createPolyfillWASI()
 );
@@ -35,15 +36,14 @@ assert(tvm.listGlobalFuncNames() !== undefined);
 
 // Test ndarray
 function testArrayCopy(dtype, arrayType) {
-  let data = [1, 2, 3, 4, 5, 6];
-  let a = tvm.empty([2, 3], dtype).copyFrom(data);
+  const data = [1, 2, 3, 4, 5, 6];
+  const a = tvm.empty([2, 3], dtype).copyFrom(data);
 
-  assert(a.device.toString() == "cpu(0)");
-  assert(a.shape[0] == 2 && a.shape[1] == 3);
-
-  let ret = a.toArray();
-  assert(ret instanceof arrayType);
-  assert(ret.toString() == arrayType.from(data).toString());
+  expect(a.dtype.toString()).toBe("cpu(0)");
+  expect(a.shape).toEqual([2, 3]);
+  const ret = a.toArray();
+  expect(ret instanceof arrayType).toBe(true);
+  expect(ret.toString()).toBe(arrayType.from(data).toString());
 }
 
 test("array copy", () => {

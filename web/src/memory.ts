@@ -196,7 +196,7 @@ export class Memory {
 /**
  * Auxiliary call stack for the FFI calls.
  *
- * Lifecyle of a call stack.
+ * Lifecycle of a call stack.
  * - Calls into allocXX to allocate space, mixed with storeXXX to store data.
  * - Calls into ptrFromOffset, no further allocation(as ptrFromOffset can change),
  *   can still call into storeXX

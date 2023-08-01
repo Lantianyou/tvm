@@ -16,7 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/* eslint-disable no-undef */
+import { test } from "vitest";
+import { randomArray } from "./relax_vm.test";
+
 // Load Emscripten Module, need to change path to root/lib
 const path = require("path");
 const fs = require("fs");
@@ -31,12 +33,6 @@ const tvm = new tvmjs.Instance(
   tvmjs.createPolyfillWASI()
 );
 
-
-function randomArray(length, max) {
-  return Array.apply(null, Array(length)).map(function () {
-    return Math.random() * max;
-  });
-}
 
 test("add one", () => {
   tvm.beginScope();
