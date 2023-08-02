@@ -17,10 +17,9 @@
  * under the License.
  */
 /* eslint-disable no-undef */
-import { expect, test, vi } from 'vitest'
+import { expect, test } from 'vitest'
 const path = require("path");
 const fs = require("fs");
-const assert = require("assert");
 const tvmjs = require("../../dist/tvmjs.bundle")
 
 const wasmPath = tvmjs.wasmPath();
@@ -31,8 +30,9 @@ const tvm = new tvmjs.Instance(
   tvmjs.createPolyfillWASI()
 );
 
+expect(tvm).toHaveProperty('listGlobalFuncNames')
+
 // Basic fields.
-assert(tvm.listGlobalFuncNames() !== undefined);
 
 // Test ndarray
 function testArrayCopy(dtype, arrayType) {

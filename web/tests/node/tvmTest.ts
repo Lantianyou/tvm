@@ -16,33 +16,28 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { expect } from 'vitest'
+
+import { join } from 'path';
+import { readFileSync } from 'fs';
+import { test } from 'vitest';
 import tvmjs from '../../dist/tvmjs.bundle'
-import { tvmTest } from './tvmTest';
+
+  const wasmPath = tvmjs.wasmPath();
+  const wasmSource = readFileSync(join(wasmPath, "tvmjs_runtime.wasm"));
+
+let tvm = null;
+
+type TestContext = {
+  tvm: tvmjs.Instance;
+};
 
 
-tvmTest("object", ({tvm}) => {
-  tvm.withNewScope(() => {
-    let data = [1, 2, 3, 4, 5, 6];
-    let a = tvm.empty([2, 3], "float32").copyFrom(data);
-
-    let t = tvm.makeTVMArray([]);
-    let b = tvm.makeTVMArray([a, t]);
-    // assert b instanceof tvmjs.TVMArray
-    expect(b instanceof tvmjs.TVMArray).toBe(true);
-    expect(b.size()).toBe(2);
-
-    let t1 = b.get(1);
-    expect(t1.getHandle()).toBe(t.getHandle());
-
-    const s0 = tvm.makeString("hello world");
-    expect(s0.toString()).toBe("hello world");
-    s0.dispose();
-
-    let ret_string = tvm.getGlobalFunc("testing.ret_string");
-    let s1 = ret_string("hello");
-    expect(s1.toString()).toBe("hello");
-    ret_string.dispose();
-    s1.dispose();
-  });
+export const tvmTest = test.extend<TestContext>({
+  tvm:async ( {_task}, use) => {
+    tvm = new tvmjs.Instance(
+      new WebAssembly.Module(wasmSource),
+      tvmjs.createPolyfillWASI());
+    await use(tvm);
+    tvm = null;
+  }
 });

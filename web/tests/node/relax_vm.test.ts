@@ -17,34 +17,19 @@
  * under the License.
  */
 // Load Emscripten Module, need to change path to root/lib
-import { test } from 'vitest';
-const path = require("path");
-const fs = require("fs");
-const assert = require("assert");
-const tvmjs = require("../../dist");
+import { expect } from 'vitest';
+import { tvmTest } from './tvmTest';
+import { randomArray } from './utils';
 
-const wasmPath = tvmjs.wasmPath();
-const wasmSource = fs.readFileSync(path.join(wasmPath, "test_relax.wasm"));
 
-const tvm = new tvmjs.Instance(
-  new WebAssembly.Module(wasmSource),
-  tvmjs.createPolyfillWASI()
-);
-
-export function randomArray(length, max) {
-  return Array.apply(null, Array(length)).map(function () {
-    return Math.random() * max;
-  });
-}
-
-test("add one", () => {
+tvmTest("add one", ({tvm}) => {
   tvm.beginScope();
   // Load system library
   const vm = tvm.createVirtualMachine(tvm.cpu());
   // grab pre-loaded function
   const fadd = vm.getFunction("main");
 
-  assert(tvm.isPackedFunc(fadd));
+  expect(tvm.isPackedFunc(fadd)).toBe(true);
   const n = 124;
   const A = tvm.empty(n).copyFrom(randomArray(n, 1));
   const B = tvm.empty(n).copyFrom(randomArray(n, 1));
@@ -55,11 +40,11 @@ test("add one", () => {
   const BB = B.toArray(); // retrieve values in js array
   const CC = C.toArray(); // retrieve values in js array
   // verify
-  for (var i = 0; i < BB.length; ++i) {
-    assert(Math.abs(CC[i] - (AA[i] + BB[i])) < 1e-5);
+  for (let i = 0; i < BB.length; ++i) {
+    expect(Math.abs(CC[i] - (AA[i] + BB[i])) < 1e-5).toBe(true);
   }
   tvm.endScope();
   // assert auto release scope behavior
-  assert(vm.mod.getHandle(false) === 0);
-  assert(fadd._tvmPackedCell.getHandle(false) === 0);
+  expect(vm.getHandle(false)).toBe(0);
+  expect(fadd._tvmPackedCell.getHandle(false)).toBe(0);
 });

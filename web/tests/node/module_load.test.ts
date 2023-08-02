@@ -16,25 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { test } from "vitest";
-import { randomArray } from "./relax_vm.test";
+import { expect } from "vitest";
+import { tvmTest } from "./tvmTest";
+import { randomArray } from "./utils";
 
-// Load Emscripten Module, need to change path to root/lib
-const path = require("path");
-const fs = require("fs");
-const assert = require("assert");
-const tvmjs = require("../../dist");
-
-const wasmPath = tvmjs.wasmPath();
-const wasmSource = fs.readFileSync(path.join(wasmPath, "test_addone.wasm"));
-
-const tvm = new tvmjs.Instance(
-  new WebAssembly.Module(wasmSource),
-  tvmjs.createPolyfillWASI()
-);
-
-
-test("add one", () => {
+tvmTest("add one", ({tvm}) => {
   tvm.beginScope();
   // Load system library
   const sysLib = tvm.systemLib();
@@ -42,7 +28,7 @@ test("add one", () => {
   const faddOne = sysLib.getFunction("add_one");
   tvm.detachFromCurrentScope(faddOne);
 
-  assert(tvm.isPackedFunc(faddOne));
+  expect(tvm.isPackedFunc(faddOne)).toBe(true);
   const n = 124;
   const A = tvm.empty(n).copyFrom(randomArray(n, 1));
   const B = tvm.empty(n);
@@ -52,15 +38,15 @@ test("add one", () => {
   const BB = B.toArray(); // retrieve values in js array
   // verify
   for (var i = 0; i < BB.length; ++i) {
-    assert(Math.abs(BB[i] - (AA[i] + 1)) < 1e-5);
+    expect(Math.abs(BB[i] - (AA[i] + 1)) < 1e-5).toBe(true);
   }
   tvm.endScope();
 
   // assert auto release scope behavior
-  assert(sysLib.getHandle(false) == 0);
+  expect(sysLib.getHandle(false)).toBe(0);
   // fadd is not released because it is detached
-  assert(faddOne._tvmPackedCell.handle != 0);
+  expect(faddOne._tvmPackedCell.handle).not.toBe(0);
   faddOne.dispose();
-  assert(A.getHandle(false) == 0);
-  assert(B.getHandle(false) == 0);
+  expect(A.getHandle(false)).toBe(0);
+  expect(B.getHandle(false)).toBe(0);
 });
