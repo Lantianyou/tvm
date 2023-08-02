@@ -86,9 +86,9 @@ tvmTest("ReturnFunc", ({tvm}) => {
   let f = myf(10);
 
   expect(tvm.isPackedFunc(f)).toBe(true);
-  assert(f(11, 0) == 21);
-  assert(f("x", 1) == "x101");
-  assert(f("x", "yz") == "x10yz");
+  expect(f(11, 0)).toBe(21);
+  expect(f("x", 1)).toBe("x101");
+  expect(f("x", "yz")).toBe("x10yz");
 
   fecho.dispose();
   myf.dispose();
@@ -120,8 +120,8 @@ tvmTest("NDArrayCbArg", ({tvm}) => {
   let record = [];
 
   let fcheck = tvm.toPackedFunc(function (x, retain) {
-    assert(use_count(x) == 2);
-    assert(x.handle != 0);
+    expect(use_count(x)).toBe(2);
+    expect(x.handle).not.toBe(0);
     record.push(x);
     if (retain) {
       tvm.detachFromCurrentScope(x);
