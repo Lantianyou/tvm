@@ -294,7 +294,7 @@ class PackedFuncCell implements Disposable {
   }
 
   dispose(): void {
-    if (this.handle != 0) {
+    if (this.handle !== 0) {
       this.lib.checkCall(
         (this.lib.exports.TVMFuncFree as ctypes.FTVMFuncFree)(this.handle)
       );
@@ -303,29 +303,41 @@ class PackedFuncCell implements Disposable {
   }
 
   getHandle(requireNotNull = true): Pointer {
-    if (requireNotNull && this.handle == 0) {
+    if (requireNotNull && this.handle === 0) {
       throw Error("PackedFunc has already been disposed");
     }
     return this.handle;
   }
 }
 
-const DeviceEnumToStr: Record<number, string> = {
-  1: "cpu",
-  2: "cuda",
-  4: "opencl",
-  8: "metal",
-  15: "webgpu"
+// Note: Device.cl and Device.opencl has the same value, meaning they will be the same in runtime
+enum Device {
+  cpu = 1,
+  cuda = 2,
+  cl = 4,
+  opencl = 4,
+  vulkan = 7,
+  metal = 8,
+  webgpu = 15
+}
+
+const DeviceEnumToStr: Omit<Record<Device, string>, Device.vulkan> = {
+  [Device.cpu]: "cpu",
+  [Device.cuda]: "cuda",
+  [Device.opencl]: "opencl",
+  [Device.metal]: "metal",
+  [Device.webgpu]: "webgpu"
 };
 
-const DeviceStrToEnum: Record<string, number> = {
-  cpu: 1,
-  cuda: 2,
-  cl: 4,
-  opencl: 4,
-  vulkan: 7,
-  metal: 8,
-  webgpu: 15
+
+const DeviceStrToEnum: Record<string, Device> = {
+  cpu: Device.cpu,
+  cuda: Device.cuda,
+  cl: Device.cl,
+  opencl: Device.opencl,
+  vulkan: Device.vulkan,
+  metal: Device.metal,
+  webgpu: Device.webgpu
 };
 
 /**
@@ -333,23 +345,22 @@ const DeviceStrToEnum: Record<string, number> = {
  */
 export class DLDevice {
   /** The device type code of the device. */
-  deviceType: number;
+  deviceType: Device;
   /** The device index. */
   deviceId: number;
 
   private lib: FFILibrary;
 
   constructor(deviceType: number | string, deviceId: number, lib: FFILibrary) {
-    const tp = typeof deviceType;
-    if (tp == "string") {
+    if (typeof deviceType === "string") {
       this.deviceType = DeviceStrToEnum[deviceType];
-      if (this.deviceType == undefined) {
+      if (!this.deviceType) {
         throw new Error("Cannot recogonize deviceType " + deviceType);
       }
-    } else if (tp == "number") {
-      this.deviceType = deviceType as number;
+    } else if (typeof deviceType === "number") {
+      this.deviceType = deviceType;
     } else {
-      throw new Error("Cannot take type " + tp + " as deviceType");
+      throw new Error("Cannot take type " + typeof deviceType + " as deviceType");
     }
     this.deviceId = deviceId;
     this.lib = lib;
@@ -359,7 +370,7 @@ export class DLDevice {
    * Synchronize the device
    */
   async sync(): Promise<void> {
-    if (this.deviceType == DeviceStrToEnum.webgpu) {
+    if (this.deviceType == Device.webgpu) {
       assert(this.lib.webGPUContext !== undefined);
       await this.lib.webGPUContext.sync();
     }
@@ -367,7 +378,7 @@ export class DLDevice {
 
   toString(): string {
     return (
-      DeviceEnumToStr[this.deviceType] + "(" + this.deviceId.toString() + ")"
+      DeviceEnumToStr[this.deviceType] + "(" + this.deviceId + ")"
     );
   }
 }
@@ -381,11 +392,11 @@ export enum DLDataTypeCode {
   OpaqueHandle = 3
 }
 
-const DLDataTypeCodeToStr: Record<number, string> = {
-  0: "int",
-  1: "uint",
-  2: "float",
-  3: "handle",
+const DLDataTypeCodeToStr: Record<DLDataTypeCode, string> = {
+  [DLDataTypeCode.Int]: "int",
+  [DLDataTypeCode.UInt]: "uint",
+  [DLDataTypeCode.Float]: "float",
+  [DLDataTypeCode.OpaqueHandle]: "handle",
 };
 
 /**
@@ -393,28 +404,28 @@ const DLDataTypeCodeToStr: Record<number, string> = {
  */
 export class DLDataType {
   /** The type code */
-  code: number;
+  code: DLDataTypeCode;
   /** Number of bits in the data type. */
   bits: number;
   /** Number of vector lanes. */
   lanes: number;
 
-  constructor(code: number, bits: number, lanes: number) {
+  constructor(code: DLDataTypeCode, bits: number, lanes: number) {
     this.code = code;
     this.bits = bits;
     this.lanes = lanes;
   }
 
-  toString(): string {
-    const ret = DLDataTypeCodeToStr[this.code] + this.bits.toString();
-    if (this.lanes != 1) {
-      return ret + "x" + this.lanes.toString();
+  toString() {
+    const ret = DLDataTypeCodeToStr[this.code] + this.bits;
+    if (this.lanes !== DLDataTypeCode.UInt) {
+      return ret + "x" + this.lanes;
     } else {
       return ret;
     }
   }
 
-  numStorageBytes(): number {
+  numStorageBytes() {
     return (this.bits * this.lanes + 7) >> 3;
   }
 }
@@ -565,15 +576,15 @@ export class NDArray implements Disposable {
         );
       }
       let buffer: ArrayBuffer;
-      if (this.dtype == "float32") {
+      if (this.dtype === "float32") {
         buffer = Float32Array.from(data).buffer;
-      } else if (this.dtype == "float64") {
+      } else if (this.dtype === "float64") {
         buffer = Float64Array.from(data).buffer;
-      } else if (this.dtype == "int32") {
+      } else if (this.dtype === "int32") {
         buffer = Int32Array.from(data).buffer;
-      } else if (this.dtype == "int8") {
+      } else if (this.dtype === "int8") {
         buffer = Int8Array.from(data).buffer;
-      } else if (this.dtype == "uint8") {
+      } else if (this.dtype === "uint8") {
         buffer = Uint8Array.from(data).buffer;
       } else {
         throw new Error("Unsupported data type " + this.dtype);
