@@ -17,20 +17,8 @@
  * under the License.
  */
 /* eslint-disable no-undef */
-import { expect, test } from 'vitest'
-const path = require("path");
-const fs = require("fs");
-const tvmjs = require("../../dist/tvmjs.bundle")
-
-const wasmPath = tvmjs.wasmPath();
-const wasmSource = fs.readFileSync(path.join(wasmPath, "tvmjs_runtime.wasm"));
-
-const tvm = new tvmjs.Instance(
-  new WebAssembly.Module(wasmSource),
-  tvmjs.createPolyfillWASI()
-);
-
-expect(tvm).toHaveProperty('listGlobalFuncNames')
+import { expect } from 'vitest'
+import { tvmTest } from './tvmTest';
 
 // Basic fields.
 
@@ -46,7 +34,8 @@ function testArrayCopy(dtype, arrayType) {
   expect(ret.toString()).toBe(arrayType.from(data).toString());
 }
 
-test("array copy", () => {
+tvmTest("array copy", ({tvm}) => {
+  expect(tvm).toHaveProperty('listGlobalFuncNames')
   tvm.withNewScope(() => {
     testArrayCopy("float32", Float32Array);
     testArrayCopy("int", Int32Array);

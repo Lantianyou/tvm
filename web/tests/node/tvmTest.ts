@@ -25,7 +25,7 @@ import tvmjs from '../../dist/tvmjs.bundle'
   const wasmPath = tvmjs.wasmPath();
   const wasmSource = readFileSync(join(wasmPath, "tvmjs_runtime.wasm"));
 
-let tvm = null;
+let tvm: tvmjs.Instance | null = null;
 
 type TestContext = {
   tvm: tvmjs.Instance;
@@ -33,11 +33,10 @@ type TestContext = {
 
 
 export const tvmTest = test.extend<TestContext>({
-  tvm:async ( {_task}, use) => {
-    tvm = new tvmjs.Instance(
-      new WebAssembly.Module(wasmSource),
-      tvmjs.createPolyfillWASI());
-    await use(tvm);
+  tvm: async ({ }, use) => {
+    const wsModule = new WebAssembly.Module(wasmSource);
+    tvm = new tvmjs.Instance(wsModule, tvmjs.createPolyfillWASI?.());
+    await use(tvm!);
     tvm = null;
   }
 });

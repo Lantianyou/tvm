@@ -21,9 +21,9 @@ import { tvmTest } from './tvmTest';
 
 tvmTest("GetGlobal", ({tvm}) => {
   tvm.beginScope();
-  let flist = tvm.listGlobalFuncNames();
-  let faddOne = tvm.getGlobalFunc("testing.add_one");
-  let fecho = tvm.getGlobalFunc("testing.echo");
+  const flist = tvm.listGlobalFuncNames();
+  const faddOne = tvm.getGlobalFunc("testing.add_one");
+  const fecho = tvm.getGlobalFunc("testing.echo");
 
   expect(faddOne(tvm.scalar(1, "int"))).toBe(2);
   expect(faddOne(tvm.scalar(-1, "int"))).toBe(0);
@@ -32,8 +32,8 @@ tvmTest("GetGlobal", ({tvm}) => {
   expect(fecho(1123)).toBe(1123);
   expect(fecho("xyz")).toBe("xyz");
 
-  let bytes = new Uint8Array([1, 2, 3]);
-  let rbytes = fecho(bytes);
+  const bytes = new Uint8Array([1, 2, 3]);
+  const rbytes = fecho(bytes);
   expect(rbytes.length).toBe(bytes.length);
 
   for (let i = 0; i < bytes.length; ++i) {
@@ -44,8 +44,8 @@ tvmTest("GetGlobal", ({tvm}) => {
 
   tvm.beginScope();
 
-  let arr = tvm.empty([2, 2]).copyFrom([1, 2, 3, 4]);
-  let arr2 = fecho(arr);
+  const arr = tvm.empty([2, 2]).copyFrom([1, 2, 3, 4]);
+  const arr2 = fecho(arr);
   expect(arr2.getHandle()).toBe(arr.getHandle());
   expect(arr2.toArray().toString()).toBe(arr.toArray().toString());
 
@@ -55,8 +55,8 @@ tvmTest("GetGlobal", ({tvm}) => {
   expect(arr2.getHandle(false)).toBe(0);
   expect(arr2.handle).not.toBe(0);
 
-  let mod = tvm.systemLib();
-  let ret = fecho(mod);
+  const mod = tvm.systemLib();
+  const ret = fecho(mod);
   expect(ret.getHandle()).toBe(mod.getHandle());
   expect(flist.length).toBeGreaterThan(0);
   tvm.endScope();
@@ -78,12 +78,12 @@ tvmTest("ReturnFunc", ({tvm}) => {
     return add;
   }
 
-  let fecho = tvm.getGlobalFunc("testing.echo");
-  let myf = tvm.toPackedFunc(addy);
+  const fecho = tvm.getGlobalFunc("testing.echo");
+  const myf = tvm.toPackedFunc(addy);
   expect(tvm.isPackedFunc(myf)).toBe(true);
-  let myf2 = tvm.toPackedFunc(myf);
+  const myf2 = tvm.toPackedFunc(myf);
   expect(myf2._tvmPackedCell.handle).toBe(myf._tvmPackedCell.handle);
-  let f = myf(10);
+  const f = myf(10);
 
   expect(tvm.isPackedFunc(f)).toBe(true);
   expect(f(11, 0)).toBe(21);
@@ -105,21 +105,21 @@ tvmTest("RegisterGlobal", ({tvm}) => {
     return x + y;
   });
 
-  let f = tvm.getGlobalFunc("xyz");
+  const f = tvm.getGlobalFunc("xyz");
   expect(f(1, 2)).toBe(3);
   f.dispose();
 
-  let syslib = tvm.systemLib();
+  const syslib = tvm.systemLib();
   syslib.dispose();
   tvm.endScope();
 });
 
 tvmTest("NDArrayCbArg", ({tvm}) => {
   tvm.beginScope();
-  let use_count = tvm.getGlobalFunc("testing.object_use_count");
-  let record = [];
+  const use_count = tvm.getGlobalFunc("testing.object_use_count");
+  const record = [];
 
-  let fcheck = tvm.toPackedFunc(function (x, retain) {
+  const fcheck = tvm.toPackedFunc(function (x, retain) {
     expect(use_count(x)).toBe(2);
     expect(x.handle).not.toBe(0);
     record.push(x);
@@ -128,7 +128,7 @@ tvmTest("NDArrayCbArg", ({tvm}) => {
     }
   });
 
-  let x = tvm.empty([2], "float32").copyFrom([1, 2]);
+  const x = tvm.empty([2], "float32").copyFrom([1, 2]);
   expect(use_count(x)).toBe(1);
 
   fcheck(x, 0);

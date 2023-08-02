@@ -23,24 +23,24 @@ import { tvmTest } from './tvmTest';
 
 tvmTest("object", ({tvm}) => {
   tvm.withNewScope(() => {
-    let data = [1, 2, 3, 4, 5, 6];
-    let a = tvm.empty([2, 3], "float32").copyFrom(data);
+    const data = [1, 2, 3, 4, 5, 6];
+    const a = tvm.empty([2, 3], "float32").copyFrom(data);
 
-    let t = tvm.makeTVMArray([]);
-    let b = tvm.makeTVMArray([a, t]);
+    const t = tvm.makeTVMArray([]);
+    const b = tvm.makeTVMArray([a, t]);
     // assert b instanceof tvmjs.TVMArray
     expect(b instanceof tvmjs.TVMArray).toBe(true);
     expect(b.size()).toBe(2);
 
-    let t1 = b.get(1);
+    const t1 = b.get(1);
     expect(t1.getHandle()).toBe(t.getHandle());
 
     const s0 = tvm.makeString("hello world");
     expect(s0.toString()).toBe("hello world");
     s0.dispose();
 
-    let ret_string = tvm.getGlobalFunc("testing.ret_string");
-    let s1 = ret_string("hello");
+    const ret_string = tvm.getGlobalFunc("testing.ret_string");
+    const s1 = ret_string("hello");
     expect(s1.toString()).toBe("hello");
     ret_string.dispose();
     s1.dispose();
