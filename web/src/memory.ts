@@ -50,36 +50,36 @@ export class Memory {
     this.viewF64 = new Float64Array(this.buffer);
   }
 
-  loadU8(ptr: Pointer): number {
-    if (this.buffer != this.memory.buffer) {
+  loadU8(ptr: Pointer) {
+    if (this.buffer !== this.memory.buffer) {
       this.updateViews();
     }
     return this.viewU8[ptr >> 0];
   }
 
-  loadU16(ptr: Pointer): number {
-    if (this.buffer != this.memory.buffer) {
+  loadU16(ptr: Pointer) {
+    if (this.buffer !== this.memory.buffer) {
       this.updateViews();
     }
     return this.viewU16[ptr >> 1];
   }
 
-  loadU32(ptr: Pointer): number {
-    if (this.buffer != this.memory.buffer) {
+  loadU32(ptr: Pointer) {
+    if (this.buffer !== this.memory.buffer) {
       this.updateViews();
     }
     return this.viewU32[ptr >> 2];
   }
 
-  loadI32(ptr: Pointer): number {
-    if (this.buffer != this.memory.buffer) {
+  loadI32(ptr: Pointer) {
+    if (this.buffer !== this.memory.buffer) {
       this.updateViews();
     }
     return this.viewI32[ptr >> 2];
   }
 
-  loadI64(ptr: Pointer): number {
-    if (this.buffer != this.memory.buffer) {
+  loadI64(ptr: Pointer) {
+    if (this.buffer !== this.memory.buffer) {
       this.updateViews();
     }
     const base = ptr >> 2;
@@ -87,22 +87,22 @@ export class Memory {
     return this.viewI32[base];
   }
 
-  loadF32(ptr: Pointer): number {
-    if (this.buffer != this.memory.buffer) {
+  loadF32(ptr: Pointer) {
+    if (this.buffer !== this.memory.buffer) {
       this.updateViews();
     }
     return this.viewF32[ptr >> 2];
   }
 
-  loadF64(ptr: Pointer): number {
-    if (this.buffer != this.memory.buffer) {
+  loadF64(ptr: Pointer) {
+    if (this.buffer !== this.memory.buffer) {
       this.updateViews();
     }
     return this.viewF64[ptr >> 3];
   }
 
   loadPointer(ptr: Pointer): Pointer {
-    if (this.buffer != this.memory.buffer) {
+    if (this.buffer !== this.memory.buffer) {
       this.updateViews();
     }
     if (this.wasm32) {
@@ -112,7 +112,7 @@ export class Memory {
     }
   }
   loadUSize(ptr: Pointer): Pointer {
-    if (this.buffer != this.memory.buffer) {
+    if (this.buffer !== this.memory.buffer) {
       this.updateViews();
     }
     if (this.wasm32) {
@@ -121,7 +121,7 @@ export class Memory {
       return this.loadI64(ptr);
     }
   }
-  sizeofPtr(): number {
+  sizeofPtr() {
     return this.wasm32 ? SizeOf.I32 : SizeOf.I64;
   }
   /**
@@ -130,7 +130,7 @@ export class Memory {
    * @param numBytes The number
    */
   loadRawBytes(ptr: Pointer, numBytes: number): Uint8Array {
-    if (this.buffer != this.memory.buffer) {
+    if (this.buffer !== this.memory.buffer) {
       this.updateViews();
     }
     const result = new Uint8Array(numBytes);
@@ -204,7 +204,7 @@ export class Memory {
  * - reset.
  */
 export class CachedCallStack implements Disposable {
-  /** List of temporay arguments that can be disposed during reset. */
+  /** List of temporary arguments that can be disposed during reset. */
   tempArgs: Array<Disposable> = [];
 
   private memory: Memory;
@@ -374,7 +374,7 @@ export class CachedCallStack implements Disposable {
    * @param offset The offset to set ot data pointer.
    * @param data The string content.
    */
-  allocThenSetArgString(offset: PtrOffset, data: string): void {
+  allocThenSetArgString(offset: PtrOffset, data: string) {
     const strOffset = this.allocRawBytes(data.length + 1);
     this.storeRawBytes(strOffset, StringToUint8Array(data));
     this.addressToSetTargetValue.push([offset, strOffset]);
@@ -386,7 +386,7 @@ export class CachedCallStack implements Disposable {
    * @param offset The offset to set ot data pointer.
    * @param data The string content.
    */
-  allocThenSetArgBytes(offset: PtrOffset, data: Uint8Array): void {
+  allocThenSetArgBytes(offset: PtrOffset, data: Uint8Array) {
     // Note: size of size_t equals sizeof ptr.
     const headerOffset = this.allocRawBytes(this.memory.sizeofPtr() * 2);
     const dataOffset = this.allocRawBytes(data.length);
@@ -400,7 +400,7 @@ export class CachedCallStack implements Disposable {
   /**
    * Update internal cache views.
    */
-  private updateViews(): void {
+  private updateViews() {
     this.viewU8 = new Uint8Array(this.buffer);
     this.viewI32 = new Int32Array(this.buffer);
     this.viewU32 = new Uint32Array(this.buffer);
