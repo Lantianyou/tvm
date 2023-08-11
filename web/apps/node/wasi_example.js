@@ -19,10 +19,10 @@
 /**
  * Example code to start the runtime.
  */
-const { WASI } = require('wasi');
-const path = require("path");
-const fs = require("fs");
-const tvmjs = require("../../dist");
+import {WASI} from 'wasi'
+import * as tvmjs from '../../build/index.js';
+import path from 'path';
+import fs from 'fs';
 
 const wasmPath = tvmjs.wasmPath();
 const wasmSource = fs.readFileSync(path.join(wasmPath, "tvmjs_runtime.wasm"));
