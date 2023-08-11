@@ -264,13 +264,10 @@ export class CachedCallStack implements Disposable {
    *
    * @param nbytes Number of bytes to be stored.
    */
-  commitToWasmMemory(nbytes: number = this.stackTop): void {
+  commitToWasmMemory(nbytes = this.stackTop): void {
     // commit all pointer values.
-    while (this.addressToSetTargetValue.length != 0) {
-      const [targetOffset, valueOffset] = this.addressToSetTargetValue.pop() as [
-        number,
-        number
-      ];
+    while (this.addressToSetTargetValue.length !== 0) {
+      const [targetOffset, valueOffset] = this.addressToSetTargetValue.pop();
       this.storePtr(targetOffset, this.ptrFromOffset(valueOffset));
     }
     this.memory.storeRawBytes(this.basePtr, this.viewU8.slice(0, nbytes));

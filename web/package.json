@@ -3,11 +3,11 @@
   "displayName": "TVM Wasm JS runtime",
   "license": "Apache-2.0",
   "version": "0.14.0-dev0",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "files": [
     "lib"
   ],
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
   "scripts": {
     "prepwasm": "make && python3 tests/python/prepare_test_libs.py",
     "build": "rollup -c",
@@ -17,22 +17,22 @@
     "bundle": "npm run build && cp lib/index.js dist/index.js && cp lib/index.js dist/tvmjs.bundle.js",
     "example": "npm run bundle && node apps/node/example.js",
     "example:wasi": "npm run bundle && node --experimental-wasi-unstable-preview1 --experimental-wasm-bigint apps/node/wasi_example.js",
-    "rpc": "npm run bundle && node --experimental-wasi-unstable-preview1  --experimental-wasm-bigint apps/node/wasi_rpc_server.js"
+    "rpc": "npm run bundle && node --experimental-wasi-unstable-preview1 apps/node/wasi_rpc_server.js"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^20.0.0",
-    "@rollup/plugin-node-resolve": "^13.0.4",
+    "@rollup/plugin-node-resolve": "^15.1.0",
     "@types/node": "^20.4.5",
     "@typescript-eslint/eslint-plugin": "^5.59.6",
     "@typescript-eslint/parser": "^5.59.6",
     "@webgpu/types": "^0.1.24",
     "eslint": "^8.41.0",
-    "rollup": "^2.56.2",
-    "rollup-plugin-ignore": "^1.0.10",
-    "rollup-plugin-typescript2": "^0.34.1",
+    "rollup": "^3.27.0",
+    "rollup-plugin-node-polyfills": "^0.2.1",
+    "rollup-plugin-polyfill-node": "^0.12.0",
+    "rollup-plugin-typescript2": "^0.35.0",
     "typedoc": "^0.24.7",
     "typedoc-plugin-missing-exports": "2.0.0",
-    "typescript": "^4.9.5",
+    "typescript": "^5.0.0",
     "vitest": "^0.33.0",
     "ws": "^7.2.5"
   }

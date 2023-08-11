@@ -16,14 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/* eslint-disable no-undef */
 import { expect } from 'vitest'
 import { tvmTest } from './tvmTest';
 
 // Basic fields.
 
 // Test ndarray
-function testArrayCopy(dtype, arrayType) {
+function testArrayCopy(dtype, arrayType, tvm) {
   const data = [1, 2, 3, 4, 5, 6];
   const a = tvm.empty([2, 3], dtype).copyFrom(data);
 
@@ -37,10 +36,10 @@ function testArrayCopy(dtype, arrayType) {
 tvmTest("array copy", ({tvm}) => {
   expect(tvm).toHaveProperty('listGlobalFuncNames')
   tvm.withNewScope(() => {
-    testArrayCopy("float32", Float32Array);
-    testArrayCopy("int", Int32Array);
-    testArrayCopy("int8", Int8Array);
-    testArrayCopy("uint8", Uint8Array);
-    testArrayCopy("float64", Float64Array);
+    testArrayCopy("float32", Float32Array, tvm);
+    testArrayCopy("int", Int32Array, tvm);
+    testArrayCopy("int8", Int8Array, tvm);
+    testArrayCopy("uint8", Uint8Array, tvm);
+    testArrayCopy("float64", Float64Array, tvm);
   });
 });

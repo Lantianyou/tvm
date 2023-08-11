@@ -17,31 +17,28 @@
  * under the License.
  */
 
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+
 /**
  * Convert string to Uint8array.
  * @param str The string.
  * @returns The corresponding Uint8Array.
+ * ref: https://stackoverflow.com/questions/6965107/converting-between-strings-and-arraybuffers
  */
-export function StringToUint8Array(str: string): Uint8Array {
-  const arr = new Uint8Array(str.length + 1);
-  for (let i = 0; i < str.length; ++i) {
-    arr[i] = str.charCodeAt(i);
-  }
-  arr[str.length] = 0;
-  return arr;
+export function StringToUint8Array(str: string) {
+  return new TextEncoder().encode(str);
 }
 
 /**
  * Convert Uint8array to string.
  * @param array The array.
  * @returns The corresponding string.
+ * ref: https://stackoverflow.com/questions/17191945/conversion-between-utf-8-arraybuffer-and-string
  */
-export function Uint8ArrayToString(arr: Uint8Array): string {
-  const ret = [];
-  for (const ch of arr) {
-    ret.push(String.fromCharCode(ch));
-  }
-  return ret.join("");
+export function Uint8ArrayToString(arr: Uint8Array) {
+  return new TextDecoder("utf-8").decode(arr);
 }
 
 /**
@@ -59,6 +56,8 @@ export function assert(condition: boolean, msg?: string): asserts condition {
  * Get the path to the wasm library in nodejs.
  * @return The wasm path.
  */
-export function wasmPath(): string {
-  return __dirname + "/wasm";
+export function wasmPath() {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  return join(__dirname, "wasm");
 }

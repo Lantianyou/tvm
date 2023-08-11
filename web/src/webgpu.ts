@@ -155,9 +155,12 @@ class CanvasRenderManager implements Disposable {
   constructor(device: GPUDevice, canvas: HTMLCanvasElement) {
     this.device = device;
     const ctx = canvas.getContext("webgpu");
-    if (ctx == null) {
+    if (!ctx) {
       throw Error("Cannot bind WebGPU context");
     }
+    console.log(ctx);
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     this.canvasContext = ctx;
     this.canvasTextureFormat = navigator.gpu.getPreferredCanvasFormat();
     this.canvasContext.configure({
@@ -326,7 +329,7 @@ export class WebGPUContext {
   private bufferTable: Array<GPUBuffer | undefined> = [undefined];
   private bufferTableFreeId: Array<number> = [];
   private podArgStagingBuffers: Array<GPUBuffer> = [];
-  private canvasRenderManager?: CanvasRenderManager = undefined;
+  private canvasRenderManager?: CanvasRenderManager;
   // number of pod arg staging buffers
   private maxNumPodArgsStagingBuffers = 2;
   // flags for debugging
@@ -388,7 +391,7 @@ export class WebGPUContext {
    * @param width The width of the image.
    */
   drawImageFromBuffer(ptr: GPUPointer, height: number, width: number) {
-    if (this.canvasRenderManager == undefined) {
+    if (!this.canvasRenderManager) {
       throw Error("Do not have a canvas context, call bindCanvas first");
     }
     this.canvasRenderManager.draw(this.gpuBufferFromPtr(ptr), height, width);

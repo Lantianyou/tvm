@@ -16,12 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import commonjs from '@rollup/plugin-commonjs';
-import ignore from "rollup-plugin-ignore";
-import resolve from '@rollup/plugin-node-resolve';
+import {nodeResolve} from '@rollup/plugin-node-resolve';
 import typescript from 'rollup-plugin-typescript2';
+import nodePolyfills from 'rollup-plugin-polyfill-node';
 
-export default {
+/**
+ * @type {import('rollup').RollupOptions}
+ */
+const config = {
   input: 'src/index.ts',
   output: {
     file: 'lib/index.js',
@@ -32,13 +34,17 @@ export default {
               'perf_hooks': 'perf_hooks'}
   },
   plugins: [
-    ignore(["fs", "path", "crypto"]),
-    resolve({ browser: true }),
-    commonjs(),
+    nodeResolve({ browser: true }),
+    nodePolyfills({
+      include: ['path', 'url']
+    }),
     typescript({
+      useTsconfigDeclarationDir: true,
       rollupCommonJSResolveHack: false,
-      clean: true
+      clean: true,
     })
   ],
   external: ['ws', 'perf_hooks']
-};
+}
+
+export default config;

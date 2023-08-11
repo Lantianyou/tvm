@@ -20,9 +20,9 @@
 /**
  * TVM JS Wasm Runtime library.
  */
-import { Pointer, PtrOffset, SizeOf, ArgTypeCode } from "./ctypes";
+import { ArgTypeCode, Pointer, PtrOffset, SizeOf } from "./ctypes";
 import { Disposable } from "./types";
-import { Memory, CachedCallStack } from "./memory";
+import { CachedCallStack, Memory } from "./memory";
 import { assert, StringToUint8Array } from "./support";
 import { Environment } from "./environment";
 import { FunctionInfo, WebGPUContext } from "./webgpu";
@@ -33,8 +33,10 @@ import * as ctypes from "./ctypes";
 /**
  * Type for PackedFunc inthe TVMRuntime.
  */
-export type PackedFunc = ((...args: any) => any) &
-  Disposable & { _tvmPackedCell: PackedFuncCell };
+export type PackedFunc =
+  & ((...args: any) => any)
+  & Disposable
+  & { _tvmPackedCell: PackedFuncCell };
 
 /**
  * @internal
@@ -50,13 +52,13 @@ class FFILibrary implements Disposable {
 
   constructor(
     wasmInstance: WebAssembly.Instance,
-    imports: Record<string, any>
+    imports: Record<string, any>,
   ) {
     this.wasmInstance = wasmInstance;
     this.memory = new Memory(this.detectWasmMemory(this.wasmInstance, imports));
     assert(
       this.wasmInstance.exports !== undefined,
-      "Expect the library module contains exports"
+      "Expect the library module contains exports",
     );
     this.exports = this.wasmInstance.exports as Record<string, Function>;
     this.wasm32 = this.memory.wasm32;
@@ -75,7 +77,7 @@ class FFILibrary implements Disposable {
   }
 
   checkCall(code: number): void {
-    if (code != 0) {
+    if (code !== 0) {
       const msgPtr = (this.exports
         .TVMGetLastError as ctypes.FTVMGetLastError)();
       throw new Error("TVMError: " + this.memory.loadCString(msgPtr));
@@ -89,7 +91,7 @@ class FFILibrary implements Disposable {
     return new CachedCallStack(
       this.memory,
       this.exports.TVMWasmAllocSpace as ctypes.FTVMWasmAllocSpace,
-      this.exports.TVMWasmFreeSpace as ctypes.FTVMWasmFreeSpace
+      this.exports.TVMWasmFreeSpace as ctypes.FTVMWasmFreeSpace,
     );
   }
 
@@ -117,7 +119,7 @@ class FFILibrary implements Disposable {
 
   private detectWasmMemory(
     instance: WebAssembly.Instance,
-    imports: Record<string, any>
+    imports: Record<string, any>,
   ): WebAssembly.Memory {
     if (instance.exports.memory instanceof WebAssembly.Memory) {
       return instance.exports.memory;
@@ -128,9 +130,9 @@ class FFILibrary implements Disposable {
 
     throw new Error(
       "Cannt detect wasm memory from imports " +
-      imports +
-      " or exports" +
-      instance.exports
+        imports +
+        " or exports" +
+        instance.exports,
     );
   }
 }
@@ -172,12 +174,20 @@ class RuntimeContext implements Disposable {
     this.arrayCacheUpdate = getGlobalFunc("vm.builtin.ndarray_cache.update");
     this.arrayCacheClear = getGlobalFunc("vm.builtin.ndarray_cache.clear");
     this.arrayDecodeStorage = getGlobalFunc("tvmjs.array.decode_storage");
-    this.paramModuleFromCache = getGlobalFunc("vm.builtin.param_module_from_cache");
+    this.paramModuleFromCache = getGlobalFunc(
+      "vm.builtin.param_module_from_cache",
+    );
     this.makeShapeTuple = getGlobalFunc("runtime.ShapeTuple");
     this.ndarrayCreateView = getGlobalFunc("runtime.TVMArrayCreateView");
-    this.sampleTopPFromLogits = getGlobalFunc("vm.builtin.sample_top_p_from_logits");
-    this.applyRepetitionPenalty = getGlobalFunc("vm.builtin.apply_repetition_penalty");
-    this.applySoftmaxWithTemperature = getGlobalFunc("vm.builtin.apply_softmax_with_temperature");
+    this.sampleTopPFromLogits = getGlobalFunc(
+      "vm.builtin.sample_top_p_from_logits",
+    );
+    this.applyRepetitionPenalty = getGlobalFunc(
+      "vm.builtin.apply_repetition_penalty",
+    );
+    this.applySoftmaxWithTemperature = getGlobalFunc(
+      "vm.builtin.apply_softmax_with_temperature",
+    );
   }
 
   dispose(): void {
@@ -210,7 +220,9 @@ class RuntimeContext implements Disposable {
       throw Error("tvm.endScope called when the stack is empty.");
     }
     // automatically dispose all the tracked values in the current scope.
-    const currScope = this.autoDisposeScope.pop() as Array<Disposable | undefined>;
+    const currScope = this.autoDisposeScope.pop() as Array<
+      Disposable | undefined
+    >;
     for (let i = 0; i < currScope.length; ++i) {
       const val = currScope[i];
       if (val !== undefined) {
@@ -229,7 +241,9 @@ class RuntimeContext implements Disposable {
    */
   attachToCurrentScope<T extends Disposable>(obj: T): T {
     if (this.autoDisposeScope.length == 0) {
-      throw Error("Must call beginScope to use functions that returns TVM objects");
+      throw Error(
+        "Must call beginScope to use functions that returns TVM objects",
+      );
     }
     const currScope = this.autoDisposeScope[this.autoDisposeScope.length - 1];
     currScope.push(obj);
@@ -296,7 +310,7 @@ class PackedFuncCell implements Disposable {
   dispose(): void {
     if (this.handle !== 0) {
       this.lib.checkCall(
-        (this.lib.exports.TVMFuncFree as ctypes.FTVMFuncFree)(this.handle)
+        (this.lib.exports.TVMFuncFree as ctypes.FTVMFuncFree)(this.handle),
       );
       this.handle = 0;
     }
@@ -308,7 +322,7 @@ class PackedFuncCell implements Disposable {
     }
     return this.handle;
   }
-}
+};
 
 // Note: Device.cl and Device.opencl has the same value, meaning they will be the same in runtime
 enum Device {
@@ -318,7 +332,7 @@ enum Device {
   opencl = 4,
   vulkan = 7,
   metal = 8,
-  webgpu = 15
+  webgpu = 15,
 }
 
 const DeviceEnumToStr: Omit<Record<Device, string>, Device.vulkan> = {
@@ -326,9 +340,8 @@ const DeviceEnumToStr: Omit<Record<Device, string>, Device.vulkan> = {
   [Device.cuda]: "cuda",
   [Device.opencl]: "opencl",
   [Device.metal]: "metal",
-  [Device.webgpu]: "webgpu"
+  [Device.webgpu]: "webgpu",
 };
-
 
 const DeviceStrToEnum: Record<string, Device> = {
   cpu: Device.cpu,
@@ -337,7 +350,7 @@ const DeviceStrToEnum: Record<string, Device> = {
   opencl: Device.opencl,
   vulkan: Device.vulkan,
   metal: Device.metal,
-  webgpu: Device.webgpu
+  webgpu: Device.webgpu,
 };
 
 /**
@@ -360,7 +373,9 @@ export class DLDevice {
     } else if (typeof deviceType === "number") {
       this.deviceType = deviceType;
     } else {
-      throw new Error("Cannot take type " + typeof deviceType + " as deviceType");
+      throw new Error(
+        "Cannot take type " + typeof deviceType + " as deviceType",
+      );
     }
     this.deviceId = deviceId;
     this.lib = lib;
@@ -389,7 +404,7 @@ export enum DLDataTypeCode {
   Int = 0,
   UInt = 1,
   Float = 2,
-  OpaqueHandle = 3
+  OpaqueHandle = 3,
 }
 
 const DLDataTypeCodeToStr: Record<DLDataTypeCode, string> = {
@@ -453,7 +468,12 @@ export class NDArray implements Disposable {
   private ctx: RuntimeContext;
   private dlDataType: DLDataType;
 
-  constructor(handle: Pointer, isView: boolean, lib: FFILibrary, ctx: RuntimeContext) {
+  constructor(
+    handle: Pointer,
+    isView: boolean,
+    lib: FFILibrary,
+    ctx: RuntimeContext,
+  ) {
     this.handle = handle;
     this.isView = isView;
     this.lib = lib;
@@ -510,7 +530,10 @@ export class NDArray implements Disposable {
    */
   view(shape: Array<number>): NDArray {
     const shapeArray = shape.map((value) => new Scalar(value, "int"));
-    return this.ctx.ndarrayCreateView(this, this.ctx.makeShapeTuple(...shapeArray));
+    return this.ctx.ndarrayCreateView(
+      this,
+      this.ctx.makeShapeTuple(...shapeArray),
+    );
   }
 
   /**
@@ -541,7 +564,7 @@ export class NDArray implements Disposable {
   dispose(): void {
     if (this.handle != 0 && !this.isView) {
       this.lib.checkCall(
-        (this.lib.exports.TVMArrayFree as ctypes.FTVMArrayFree)(this.handle)
+        (this.lib.exports.TVMArrayFree as ctypes.FTVMArrayFree)(this.handle),
       );
       this.handle = 0;
     }
@@ -559,8 +582,8 @@ export class NDArray implements Disposable {
         (this.lib.exports.TVMArrayCopyFromTo as ctypes.FTVMArrayCopyFromTo)(
           data.getHandle(),
           this.getHandle(),
-          0
-        )
+          0,
+        ),
       );
       return this;
     } else {
@@ -570,9 +593,9 @@ export class NDArray implements Disposable {
       if (data.length != size) {
         throw new Error(
           "data size and shape mismatch data.length" +
-          data.length +
-          " vs " +
-          size
+            data.length +
+            " vs " +
+            size,
         );
       }
       let buffer: ArrayBuffer;
@@ -600,7 +623,12 @@ export class NDArray implements Disposable {
   copyFromRawBytes(data: Uint8Array): this {
     // short cut for gpu copy
     if (this.device.deviceType == DeviceStrToEnum.webgpu) {
-      this.lib.webGPUContext?.copyRawBytesToBuffer(data, this.getDataPtr(), 0, data.length);
+      this.lib.webGPUContext?.copyRawBytesToBuffer(
+        data,
+        this.getDataPtr(),
+        0,
+        data.length,
+      );
       return this;
     }
     // CPU copy
@@ -621,8 +649,8 @@ export class NDArray implements Disposable {
       (this.lib.exports.TVMArrayCopyFromBytes as ctypes.FTVMArrayCopyFromBytes)(
         this.getHandle(),
         tempPtr,
-        nbytes
-      )
+        nbytes,
+      ),
     );
 
     this.lib.recycleCallStack(stack);
@@ -634,7 +662,9 @@ export class NDArray implements Disposable {
    */
   toRawBytes(): Uint8Array {
     if (this.device.deviceType != DeviceStrToEnum.cpu) {
-      throw new Error("Can only sync copy CPU array, use cpu_arr.copyfrom(gpu_arr) then sync instead.");
+      throw new Error(
+        "Can only sync copy CPU array, use cpu_arr.copyfrom(gpu_arr) then sync instead.",
+      );
     }
     const size = this.shape.reduce((a, b) => {
       return a * b;
@@ -649,8 +679,8 @@ export class NDArray implements Disposable {
       (this.lib.exports.TVMArrayCopyToBytes as ctypes.FTVMArrayCopyToBytes)(
         this.getHandle(),
         tempPtr,
-        nbytes
-      )
+        nbytes,
+      ),
     );
     const ret = this.lib.memory.loadRawBytes(tempPtr, nbytes);
 
@@ -698,7 +728,7 @@ export class Module implements Disposable {
   constructor(
     handle: Pointer,
     lib: FFILibrary,
-    makePackedFunc: (ptr: Pointer) => PackedFunc
+    makePackedFunc: (ptr: Pointer) => PackedFunc,
   ) {
     this.handle = handle;
     this.lib = lib;
@@ -706,9 +736,9 @@ export class Module implements Disposable {
   }
 
   dispose(): void {
-    if (this.handle != 0) {
+    if (this.handle !== 0) {
       this.lib.checkCall(
-        (this.lib.exports.TVMModFree as ctypes.FTVMModFree)(this.handle)
+        (this.lib.exports.TVMModFree as ctypes.FTVMModFree)(this.handle),
       );
       this.handle = 0;
     }
@@ -751,8 +781,8 @@ export class Module implements Disposable {
         this.getHandle(),
         stack.ptrFromOffset(nameOffset),
         queryImports ? 1 : 0,
-        outPtr
-      )
+        outPtr,
+      ),
     );
     const handle = this.lib.memory.loadPointer(outPtr);
     this.lib.recycleCallStack(stack);
@@ -771,8 +801,8 @@ export class Module implements Disposable {
     this.lib.checkCall(
       (this.lib.exports.TVMModImport as ctypes.FTVMModImport)(
         this.getHandle(),
-        mod.getHandle()
-      )
+        mod.getHandle(),
+      ),
     );
   }
 }
@@ -788,7 +818,7 @@ export class TVMObject implements Disposable {
   constructor(
     handle: Pointer,
     lib: FFILibrary,
-    ctx: RuntimeContext
+    ctx: RuntimeContext,
   ) {
     this.handle = handle;
     this.lib = lib;
@@ -796,9 +826,9 @@ export class TVMObject implements Disposable {
   }
 
   dispose(): void {
-    if (this.handle != 0) {
+    if (this.handle !== 0) {
       this.lib.checkCall(
-        (this.lib.exports.TVMObjectFree as ctypes.FTVMObjectFree)(this.handle)
+        (this.lib.exports.TVMObjectFree as ctypes.FTVMObjectFree)(this.handle),
       );
       this.handle = 0;
     }
@@ -811,7 +841,7 @@ export class TVMObject implements Disposable {
    * @returns The handle.
    */
   getHandle(requireNotNull = true): Pointer {
-    if (requireNotNull && this.handle == 0) {
+    if (requireNotNull && this.handle === 0) {
       throw Error("Module has already been disposed");
     }
     return this.handle;
@@ -829,8 +859,8 @@ export class TVMObject implements Disposable {
     this.lib.checkCall(
       (this.lib.exports.TVMObjectGetTypeIndex as ctypes.FTVMObjectGetTypeIndex)(
         this.getHandle(),
-        outPtr
-      )
+        outPtr,
+      ),
     );
     const result = this.lib.memory.loadU32(outPtr);
     this.lib.recycleCallStack(stack);
@@ -844,13 +874,14 @@ export class TVMObject implements Disposable {
     const outOffset = stack.allocPtrArray(1);
     const outPtr = stack.ptrFromOffset(outOffset);
     this.lib.checkCall(
-      (this.lib.exports.TVMObjectTypeIndex2Key as ctypes.FTVMObjectTypeIndex2Key)(
-        type_index,
-        outPtr
-      )
+      (this.lib.exports
+        .TVMObjectTypeIndex2Key as ctypes.FTVMObjectTypeIndex2Key)(
+          type_index,
+          outPtr,
+        ),
     );
     const result = this.lib.memory.loadCString(
-      this.lib.memory.loadPointer(outPtr)
+      this.lib.memory.loadPointer(outPtr),
     );
     this.lib.recycleCallStack(stack);
     return result;
@@ -858,7 +889,11 @@ export class TVMObject implements Disposable {
 }
 
 /** Objectconstructor */
-type FObjectConstructor = (handle: Pointer, lib: FFILibrary, ctx: RuntimeContext) => TVMObject;
+type FObjectConstructor = (
+  handle: Pointer,
+  lib: FFILibrary,
+  ctx: RuntimeContext,
+) => TVMObject;
 
 /** All possible object types. */
 type TVMObjectBase = TVMObject | NDArray | Module | PackedFunc;
@@ -868,7 +903,7 @@ export class TVMArray extends TVMObject {
   constructor(
     handle: Pointer,
     lib: FFILibrary,
-    ctx: RuntimeContext
+    ctx: RuntimeContext,
   ) {
     super(handle, lib, ctx);
   }
@@ -885,7 +920,10 @@ export class TVMArray extends TVMObject {
    * @returns The element.
    */
   get(index: number): TVMObjectBase {
-    return this.ctx.arrayGetItem(this, new Scalar(index, "int32")) as TVMObjectBase;
+    return this.ctx.arrayGetItem(
+      this,
+      new Scalar(index, "int32"),
+    ) as TVMObjectBase;
   }
 }
 
@@ -894,7 +932,7 @@ export class TVMString extends TVMObject {
   constructor(
     handle: Pointer,
     lib: FFILibrary,
-    ctx: RuntimeContext
+    ctx: RuntimeContext,
   ) {
     super(handle, lib, ctx);
   }
@@ -964,6 +1002,7 @@ enum AsyncCallbackCode {
   kReturn = 4,
   kException = 5,
 }
+
 export interface NDArrayCacheEntry {
   name: string;
   shape: Array<number>;
@@ -1021,9 +1060,9 @@ export class ArtifactCache {
       this.cache = await caches.open(this.scope);
     }
     return this.cache.keys()
-      .then(requests => requests.map(request => request.url))
-      .then(cacheKeys => keys.every(key => cacheKeys.indexOf(key) !== -1))
-      .catch(err => false);
+      .then((requests) => requests.map((request) => request.url))
+      .then((cacheKeys) => keys.every((key) => cacheKeys.indexOf(key) !== -1))
+      .catch((err) => false);
   }
 }
 
@@ -1057,8 +1096,9 @@ export class Instance implements Disposable {
   /**
    * Internal function(registered by the runtime)
    */
-  private wasmCreateLibraryModule?: PackedFunc &
-    ((getFunc: PackedFunc, getGlobal: PackedFunc) => PackedFunc);
+  private wasmCreateLibraryModule?:
+    & PackedFunc
+    & ((getFunc: PackedFunc, getGlobal: PackedFunc) => PackedFunc);
 
   /**
    * Constructor
@@ -1077,12 +1117,12 @@ export class Instance implements Disposable {
     wasmModule: WebAssembly.Module,
     importObject: Record<string, any> = {},
     wasmInstance?: WebAssembly.Instance,
-    env?: Environment
+    env?: Environment,
   ) {
     if (wasmInstance instanceof WebAssembly.Instance) {
       assert(
         env instanceof Environment,
-        "env must be provided when passing in instance"
+        "env must be provided when passing in instance",
       );
     } else {
       assert(env === undefined);
@@ -1100,7 +1140,7 @@ export class Instance implements Disposable {
         const autoAttachToScope = false;
         // runtime context function do not auto-release.
         return this.getGlobalFuncInternal(name, autoAttachToScope);
-      }
+      },
     );
     this.registerEnvGlobalPackedFuncs();
     this.registerObjectFactoryFuncs();
@@ -1114,7 +1154,12 @@ export class Instance implements Disposable {
    * @number The number of times to compute the average.
    * @repeat The number of times to repeat the run.
    */
-  async benchmark(run: () => void, dev: DLDevice, number = 10, repeat = 1): Promise<number[]> {
+  async benchmark(
+    run: () => void,
+    dev: DLDevice,
+    number = 10,
+    repeat = 1,
+  ): Promise<number[]> {
     // Skip first run as it can involve GPU warmup and module loading time.
     const perf = compact.getPerformance();
     const results = [];
@@ -1144,7 +1189,7 @@ export class Instance implements Disposable {
   /**
    * Obtain the runtime information in readable format.
    */
-  runtimeStatsText(): string {
+  runtimeStatsText() {
     if (this.lib.webGPUContext !== undefined) {
       return this.lib.webGPUContext.runtimeStatsText();
     } else {
@@ -1246,14 +1291,14 @@ export class Instance implements Disposable {
 
     const outSizePtr = stack.ptrFromOffset(outSizeOffset);
     const outArrayPtr = stack.ptrFromOffset(
-      outSizeOffset + this.lib.sizeofPtr()
+      outSizeOffset + this.lib.sizeofPtr(),
     );
 
     this.lib.checkCall(
       (this.exports.TVMFuncListGlobalNames as ctypes.FTVMFuncListGlobalNames)(
         outSizePtr,
-        outArrayPtr
-      )
+        outArrayPtr,
+      ),
     );
 
     const size = this.memory.loadI32(outSizePtr);
@@ -1263,8 +1308,8 @@ export class Instance implements Disposable {
     for (let i = 0; i < size; ++i) {
       names.push(
         this.memory.loadCString(
-          this.memory.loadPointer(array + this.lib.sizeofPtr() * i)
-        )
+          this.memory.loadPointer(array + this.lib.sizeofPtr() * i),
+        ),
       );
     }
 
@@ -1281,7 +1326,7 @@ export class Instance implements Disposable {
   registerFunc(
     name: string,
     func: PackedFunc | Function,
-    override = false
+    override = false,
   ): void {
     this.withNewScope(() => {
       const autoAttachToScope = true;
@@ -1295,11 +1340,12 @@ export class Instance implements Disposable {
       stack.commitToWasmMemory();
 
       this.lib.checkCall(
-        (this.lib.exports.TVMFuncRegisterGlobal as ctypes.FTVMFuncRegisterGlobal)(
-          stack.ptrFromOffset(nameOffset),
-          packedFunc._tvmPackedCell.getHandle(),
-          ioverride
-        )
+        (this.lib.exports
+          .TVMFuncRegisterGlobal as ctypes.FTVMFuncRegisterGlobal)(
+            stack.ptrFromOffset(nameOffset),
+            packedFunc._tvmPackedCell.getHandle(),
+            ioverride,
+          ),
       );
       this.lib.recycleCallStack(stack);
     });
@@ -1315,7 +1361,10 @@ export class Instance implements Disposable {
     return this.getGlobalFuncInternal(name, true);
   }
 
-  private getGlobalFuncInternal(name: string, autoAttachToScope = true): PackedFunc {
+  private getGlobalFuncInternal(
+    name: string,
+    autoAttachToScope = true,
+  ): PackedFunc {
     const stack = this.lib.getOrAllocCallStack();
     const nameOffset = stack.allocRawBytes(name.length + 1);
     stack.storeRawBytes(nameOffset, StringToUint8Array(name));
@@ -1327,8 +1376,8 @@ export class Instance implements Disposable {
     this.lib.checkCall(
       (this.exports.TVMFuncGetGlobal as ctypes.FTVMFuncGetGlobal)(
         stack.ptrFromOffset(nameOffset),
-        outPtr
-      )
+        outPtr,
+      ),
     );
     const handle = this.memory.loadPointer(outPtr);
     this.lib.recycleCallStack(stack);
@@ -1361,25 +1410,30 @@ export class Instance implements Disposable {
     return this.toPackedFuncInternal(func, true);
   }
 
-  private toPackedFuncInternal(func: Function, autoAttachToScope: boolean): PackedFunc {
+  private toPackedFuncInternal(
+    func: Function,
+    autoAttachToScope: boolean,
+  ): PackedFunc {
     if (this.isPackedFunc(func)) return func as PackedFunc;
-    const ret = this.createPackedFuncFromCFunc(this.wrapJSFuncAsPackedCFunc(func));
+    const ret = this.createPackedFuncFromCFunc(
+      this.wrapJSFuncAsPackedCFunc(func),
+    );
     if (autoAttachToScope) return this.ctx.attachToCurrentScope(ret);
     return ret;
   }
 
   /**
-  * Setup a virtual machine module with given device.
-  *
-  * @param dev DLDevice the device.
-  * @returns The created virtual machime.
-  */
+   * Setup a virtual machine module with given device.
+   *
+   * @param dev DLDevice the device.
+   * @returns The created virtual machime.
+   */
   createVirtualMachine(dev: DLDevice): VirtualMachine {
     const mod = this.ctx.detachFromCurrentScope(
-      this.systemLib().getFunction("vm_load_executable")()
+      this.systemLib().getFunction("vm_load_executable")(),
     );
     return this.ctx.attachToCurrentScope(
-      new VirtualMachine(mod, dev)
+      new VirtualMachine(mod, dev),
     );
   }
 
@@ -1388,7 +1442,7 @@ export class Instance implements Disposable {
   //-----------------------------------------------
   /**
    * Register a call back for fetch progress.
-  *
+   *
    * @param cb the fetch progress callback.
    */
   registerInitProgressCallback(cb: InitProgressCallback) {
@@ -1404,7 +1458,9 @@ export class Instance implements Disposable {
    */
   getParamsFromCache(prefix: string, numParams: number): TVMObject {
     return (this.ctx.paramModuleFromCache(
-      prefix, new Scalar(numParams, "int32")) as Module).getFunction("get_params")();
+      prefix,
+      new Scalar(numParams, "int32"),
+    ) as Module).getFunction("get_params")();
   }
 
   /**
@@ -1431,7 +1487,11 @@ export class Instance implements Disposable {
    * @param arr The content.
    */
   ndarrayCacheUpdate(name: string, arr: NDArray, override = false) {
-    this.ctx.arrayCacheUpdate(name, arr, this.scalar(override ? 1 : 0, "int32"));
+    this.ctx.arrayCacheUpdate(
+      name,
+      arr,
+      this.scalar(override ? 1 : 0, "int32"),
+    );
   }
 
   /**
@@ -1454,7 +1514,7 @@ export class Instance implements Disposable {
   async fetchNDArrayCache(
     ndarrayCacheUrl: string,
     device: DLDevice,
-    cacheScope = "tvmjs"
+    cacheScope = "tvmjs",
   ): Promise<any> {
     const artifactCache = new ArtifactCache(cacheScope);
     const jsonUrl = new URL("ndarray-cache.json", ndarrayCacheUrl).href;
@@ -1466,8 +1526,14 @@ export class Instance implements Disposable {
     }
     await this.fetchNDArrayCacheInternal(
       ndarrayCacheUrl,
-      list["records"] as Array<NDArrayShardEntry>, device, artifactCache);
-    this.cacheMetadata = { ...this.cacheMetadata, ...(list["metadata"] as Record<string, any>) };
+      list["records"] as Array<NDArrayShardEntry>,
+      device,
+      artifactCache,
+    );
+    this.cacheMetadata = {
+      ...this.cacheMetadata,
+      ...(list["metadata"] as Record<string, any>),
+    };
   }
 
   /**
@@ -1482,7 +1548,7 @@ export class Instance implements Disposable {
     ndarrayCacheUrl: string,
     list: Array<NDArrayShardEntry>,
     device: DLDevice,
-    artifactCache: ArtifactCache
+    artifactCache: ArtifactCache,
   ) {
     const perf = compact.getPerformance();
     const tstart = perf.now();
@@ -1494,28 +1560,35 @@ export class Instance implements Disposable {
     let fetchedBytes = 0;
     let timeElapsed = 0;
 
-    const cacheOnly = await artifactCache.hasAllKeys(list.map(key => new URL(key.dataPath, ndarrayCacheUrl).href))
+    const cacheOnly = await artifactCache.hasAllKeys(
+      list.map((key) => new URL(key.dataPath, ndarrayCacheUrl).href),
+    );
 
     const reportCallback = (iter: number) => {
       // report
       for (let j = 0; j < this.initProgressCallback.length; ++j) {
         let text = "Fetching param cache[" + iter + "/" + list.length + "]: ";
-        text += Math.ceil(fetchedBytes / (1024 * 1024)).toString() + "MB fetched. "
-        text += Math.floor(fetchedBytes * 100 / totalBytes).toString() + "% completed, "
+        text += Math.ceil(fetchedBytes / (1024 * 1024)).toString() +
+          "MB fetched. ";
+        text += Math.floor(fetchedBytes * 100 / totalBytes).toString() +
+          "% completed, ";
         text += timeElapsed + " secs elapsed.";
-        text += " It can take a while when we first visit this page to populate the cache."
+        text +=
+          " It can take a while when we first visit this page to populate the cache.";
         text += " Later refreshes will become faster.";
         if (cacheOnly) {
           text = "Loading model from cache[" + iter + "/" + list.length + "]: ";
-          text += Math.ceil(fetchedBytes / (1024 * 1024)).toString() + "MB loaded. "
-          text += Math.floor(fetchedBytes * 100 / totalBytes).toString() + "% completed, "
+          text += Math.ceil(fetchedBytes / (1024 * 1024)).toString() +
+            "MB loaded. ";
+          text += Math.floor(fetchedBytes * 100 / totalBytes).toString() +
+            "% completed, ";
           text += timeElapsed + " secs elapsed.";
         }
         this.initProgressCallback[j]({
           progress: fetchedBytes / totalBytes,
           timeElapsed: timeElapsed,
           cacheOnly: cacheOnly,
-          text: text
+          text: text,
         });
       }
     };
@@ -1535,7 +1608,8 @@ export class Instance implements Disposable {
       const dataUrl = new URL(list[i].dataPath, ndarrayCacheUrl).href;
       let buffer;
       try {
-        buffer = await (await artifactCache.fetchWithCache(dataUrl)).arrayBuffer();
+        buffer = await (await artifactCache.fetchWithCache(dataUrl))
+          .arrayBuffer();
       } catch (err) {
         this.env.logger("Error: Cannot fetch " + dataUrl + " err= " + err);
         throw err;
@@ -1545,12 +1619,19 @@ export class Instance implements Disposable {
         const rec = shardRecords[j];
         const cpu_arr = this.withNewScope(() => {
           return this.detachFromCurrentScope(
-            this.empty(rec.shape, rec.dtype, this.cpu())
-          )
+            this.empty(rec.shape, rec.dtype, this.cpu()),
+          );
         });
-        const recSource = buffer.slice(rec.byteOffset, rec.byteOffset + rec.nbytes);
+        const recSource = buffer.slice(
+          rec.byteOffset,
+          rec.byteOffset + rec.nbytes,
+        );
         // first sync copy to cpu.
-        this.ctx.arrayDecodeStorage(cpu_arr, new Uint8Array(recSource), rec.format);
+        this.ctx.arrayDecodeStorage(
+          cpu_arr,
+          new Uint8Array(recSource),
+          rec.format,
+        );
         // then async stream into GPU if needed
         if (device.deviceType == DeviceStrToEnum.cpu) {
           this.ndarrayCacheUpdate(rec.name, cpu_arr, false);
@@ -1559,8 +1640,8 @@ export class Instance implements Disposable {
           // allocate a gpu arr and async copy to it.
           const gpu_arr = this.withNewScope(() => {
             return this.detachFromCurrentScope(
-              this.empty(rec.shape, rec.dtype, device)
-            )
+              this.empty(rec.shape, rec.dtype, device),
+            );
           });
           gpu_arr.copyFrom(cpu_arr);
           await device.sync();
@@ -1667,7 +1748,7 @@ export class Instance implements Disposable {
   empty(
     shape: Array<number> | number,
     dtype: string | DLDataType = "float32",
-    dev: DLDevice = this.device("cpu", 0)
+    dev: DLDevice = this.device("cpu", 0),
   ): NDArray {
     dtype = this.toDLDataType(dtype);
     shape = typeof shape == "number" ? [shape] : shape;
@@ -1691,11 +1772,11 @@ export class Instance implements Disposable {
         dtype.lanes,
         dev.deviceType,
         dev.deviceId,
-        outPtr
-      )
+        outPtr,
+      ),
     );
     const ret = this.ctx.attachToCurrentScope(
-      new NDArray(this.memory.loadPointer(outPtr), false, this.lib, this.ctx)
+      new NDArray(this.memory.loadPointer(outPtr), false, this.lib, this.ctx),
     );
     this.lib.recycleCallStack(stack);
     return ret;
@@ -1714,7 +1795,7 @@ export class Instance implements Disposable {
     shape: Array<number>,
     low: number,
     high: number,
-    dev: DLDevice
+    dev: DLDevice,
   ): NDArray {
     const ret = this.empty(shape, "float32", dev);
     const size = shape.reduce((a, b) => {
@@ -1736,8 +1817,17 @@ export class Instance implements Disposable {
    * @param top_p The top_p
    * @returns The sampled index.
    */
-  sampleTopPFromLogits(logits: NDArray, temperature: number, top_p: number): number {
-    return this.ctx.sampleTopPFromLogits(logits, temperature, top_p, Math.random());
+  sampleTopPFromLogits(
+    logits: NDArray,
+    temperature: number,
+    top_p: number,
+  ): number {
+    return this.ctx.sampleTopPFromLogits(
+      logits,
+      temperature,
+      top_p,
+      Math.random(),
+    );
   }
 
   /**
@@ -1774,20 +1864,27 @@ export class Instance implements Disposable {
    */
   showImage(dataRGBA: NDArray) {
     if (dataRGBA.shape.length != 2) {
-      throw Error("Require a height x width uint32 NDArray in RGBA" +
-        "get shape=" + dataRGBA.shape.toString() + " instead."
+      throw Error(
+        "Require a height x width uint32 NDArray in RGBA" +
+          "get shape=" + dataRGBA.shape.toString() + " instead.",
       );
     }
     if (dataRGBA.device.deviceType != DeviceStrToEnum.webgpu) {
-      throw new Error("Can only run showImage on WebGPU array, " +
-        "get " + DeviceEnumToStr[dataRGBA.device.deviceType] + " instead.");
+      throw new Error(
+        "Can only run showImage on WebGPU array, " +
+          "get " + DeviceEnumToStr[dataRGBA.device.deviceType] + " instead.",
+      );
     }
     if (dataRGBA.dtype != "uint32") {
-      throw Error("Require a height x width uint32 NDArray in RGBA, " +
-        "get " + dataRGBA.dtype + " instead.");
+      throw Error(
+        "Require a height x width uint32 NDArray in RGBA, " +
+          "get " + dataRGBA.dtype + " instead.",
+      );
     }
     this.lib.webGPUContext?.drawImageFromBuffer(
-      dataRGBA.getDataPtr(), dataRGBA.shape[0], dataRGBA.shape[1]
+      dataRGBA.getDataPtr(),
+      dataRGBA.shape[0],
+      dataRGBA.shape[1],
     );
   }
 
@@ -1808,7 +1905,7 @@ export class Instance implements Disposable {
    * @returns The result array.
    */
   makeTVMArray(
-    inputs: Array<TVMObjectBase>
+    inputs: Array<TVMObjectBase>,
   ): TVMArray {
     return this.ctx.arrayMake(...inputs) as TVMArray;
   }
@@ -1838,7 +1935,7 @@ export class Instance implements Disposable {
    * @returns The corresponding type index.
    */
   typeKey2Index(
-    typeKey: string
+    typeKey: string,
   ): number {
     const stack = this.lib.getOrAllocCallStack();
     const typeKeyOffset = stack.allocRawBytes(typeKey.length + 1);
@@ -1849,10 +1946,11 @@ export class Instance implements Disposable {
     stack.commitToWasmMemory(outOffset);
 
     this.lib.checkCall(
-      (this.lib.exports.TVMObjectTypeKey2Index as ctypes.FTVMObjectTypeKey2Index)(
-        stack.ptrFromOffset(typeKeyOffset),
-        outPtr
-      )
+      (this.lib.exports
+        .TVMObjectTypeKey2Index as ctypes.FTVMObjectTypeKey2Index)(
+          stack.ptrFromOffset(typeKeyOffset),
+          outPtr,
+        ),
     );
     const typeIndex = this.memory.loadU32(outPtr);
     this.lib.recycleCallStack(stack);
@@ -1868,7 +1966,7 @@ export class Instance implements Disposable {
   registerObjectConstructor(
     typeKey: string,
     func: FObjectConstructor,
-    override = false
+    override = false,
   ): void {
     const typeIndex = this.typeKey2Index(typeKey);
     if (this.objFactory.has(typeIndex)) {
@@ -1889,12 +1987,14 @@ export class Instance implements Disposable {
   registerAsyncServerFunc(
     name: string,
     func: Function,
-    override = false
+    override = false,
   ): void {
     const asyncVariant = (...args: Array<any>): void => {
       const fargs = args.slice(0, args.length - 1);
       // need to keep it alive until callback is fulfilled.
-      const callback = this.detachFromCurrentScope(args[args.length - 1] as PackedFunc);
+      const callback = this.detachFromCurrentScope(
+        args[args.length - 1] as PackedFunc,
+      );
       const promise: Promise<any> = func(...fargs);
       promise.then((rv: any) => {
         callback(this.scalar(AsyncCallbackCode.kReturn, "int32"), rv);
@@ -1909,17 +2009,19 @@ export class Instance implements Disposable {
    * @param mod The input module.
    */
   async asyncLoadWebGPUPipelines(mod: Module): Promise<void> {
-    if (this.lib.webGPUContext == undefined) throw Error("WebGPU not initialied");
+    if (this.lib.webGPUContext == undefined) {
+      throw Error("WebGPU not initialied");
+    }
     const webgpuContext = this.lib.webGPUContext;
 
     this.beginScope();
     const fmap_str = mod.getFunction("webgpu.get_fmap", true)() as string;
     const fmap: Record<string, FunctionInfo> = JSON.parse(fmap_str);
     const fGetShader = this.detachFromCurrentScope(
-      mod.getFunction("webgpu.get_shader")
+      mod.getFunction("webgpu.get_shader"),
     );
     const fUpdatePrebuild = this.detachFromCurrentScope(
-      mod.getFunction("webgpu.update_prebuild")
+      mod.getFunction("webgpu.update_prebuild"),
     );
     this.endScope();
 
@@ -1934,17 +2036,20 @@ export class Instance implements Disposable {
     for (const [key, finfo] of fmapEntries) {
       const code = fGetShader(key);
       assert(key == finfo.name);
-      const event = webgpuContext.createShaderAsync(finfo, code).then((func) => {
-        this.beginScope();
-        fUpdatePrebuild(key, func);
-        this.endScope();
-
-      }).then(() => {
+      const event = webgpuContext.createShaderAsync(finfo, code).then(
+        (func) => {
+          this.beginScope();
+          fUpdatePrebuild(key, func);
+          this.endScope();
+        },
+      ).then(() => {
         finishCounter += 1;
         const tend = perf.now();
         const timeReportGap = 1000;
         // skip report if gap is smaller than 1000
-        if ((tend - tlastReport) < 1000 && finishCounter != fmapEntries.length) {
+        if (
+          (tend - tlastReport) < 1000 && finishCounter != fmapEntries.length
+        ) {
           return;
         }
         tlastReport = tend;
@@ -1952,21 +2057,22 @@ export class Instance implements Disposable {
         // report
         for (let j = 0; j < this.initProgressCallback.length; ++j) {
           const progress = finishCounter / fmapEntries.length;
-          let text = "Loading GPU shader modules[" + finishCounter + "/" + fmapEntries.length + "]: ";
-          text += Math.floor(progress * 100).toString() + "% completed, "
+          let text = "Loading GPU shader modules[" + finishCounter + "/" +
+            fmapEntries.length + "]: ";
+          text += Math.floor(progress * 100).toString() + "% completed, ";
           text += timeElapsed + " secs elapsed.";
           this.initProgressCallback[j]({
             progress: progress,
             timeElapsed: timeElapsed,
             cacheOnly: false,
-            text: text
+            text: text,
           });
         }
       });
-      allEvents = Promise.all([allEvents, event]).then(() => { });
+      allEvents = Promise.all([allEvents, event]).then(() => {});
     }
     await allEvents;
-    assert(finishCounter == fmapEntries.length);
+    assert(finishCounter === fmapEntries.length);
   }
 
   /**
@@ -1975,15 +2081,19 @@ export class Instance implements Disposable {
    */
   initWebGPU(device: GPUDevice): void {
     const webGPUContext = new WebGPUContext(
-      this.memory, device
+      this.memory,
+      device,
     );
     this.registerFunc("wasm.WebGPUDeviceAPI", (name: string) => {
       return webGPUContext.getDeviceAPI(name);
     });
-    this.registerFunc("wasm.WebGPUCreateShader", (info: string, code: string) => {
-      const finfo = JSON.parse(info) as FunctionInfo;
-      return webGPUContext.createShader(finfo, code);
-    });
+    this.registerFunc(
+      "wasm.WebGPUCreateShader",
+      (info: string, code: string) => {
+        const finfo = JSON.parse(info) as FunctionInfo;
+        return webGPUContext.createShader(finfo, code);
+      },
+    );
     this.registerAsyncServerFunc("wasm.WebGPUWaitForTasks", async () => {
       await webGPUContext.sync();
     });
@@ -1992,14 +2102,18 @@ export class Instance implements Disposable {
 
   /** Register all object factory */
   private registerObjectFactoryFuncs(): void {
-    this.registerObjectConstructor("Array",
+    this.registerObjectConstructor(
+      "Array",
       (handle: number, lib: FFILibrary, ctx: RuntimeContext) => {
         return new TVMArray(handle, lib, ctx);
-      });
-    this.registerObjectConstructor("runtime.String",
+      },
+    );
+    this.registerObjectConstructor(
+      "runtime.String",
       (handle: number, lib: FFILibrary, ctx: RuntimeContext) => {
         return new TVMString(handle, lib, ctx);
-      });
+      },
+    );
   }
 
   /** Register global packed functions needed by the backend to the env. */
@@ -2016,7 +2130,7 @@ export class Instance implements Disposable {
       minRepeatMs: number,
       limitZeroTimeIterations: number,
       cooldownIntervalMs: number,
-      repeatsToCooldown: number
+      repeatsToCooldown: number,
     ): Promise<Uint8Array> => {
       // detach and explicit dispose when tasks is fullfilled
       // the promise will immediately return and we need to makesure
@@ -2035,7 +2149,10 @@ export class Instance implements Disposable {
           if (durationMs > 0.0) {
             const golden_ratio = 1.618;
             setupNumber = Math.floor(
-              Math.max(minRepeatMs / (durationMs / setupNumber) + 1, setupNumber * golden_ratio)
+              Math.max(
+                minRepeatMs / (durationMs / setupNumber) + 1,
+                setupNumber * golden_ratio,
+              ),
             );
           }
           const tstart: number = perf.now();
@@ -2047,11 +2164,14 @@ export class Instance implements Disposable {
           if (durationMs == 0) {
             absoluteZeroTimes++;
           }
-        } while (durationMs < minRepeatMs && absoluteZeroTimes < limitZeroTimeIterations);
+        } while (
+          durationMs < minRepeatMs &&
+          absoluteZeroTimes < limitZeroTimeIterations
+        );
         const speed = durationMs / setupNumber / 1000;
         result.push(speed);
         if (cooldownIntervalMs > 0.0 && (i % repeatsToCooldown) == 0) {
-          await new Promise(r => setTimeout(r, cooldownIntervalMs));
+          await new Promise((r) => setTimeout(r, cooldownIntervalMs));
         }
       }
       const ret = new Float64Array(result.length);
@@ -2063,7 +2183,7 @@ export class Instance implements Disposable {
     };
 
     const addOne = async (x: number): Promise<number> => {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
       return x + 1;
     };
 
@@ -2072,7 +2192,7 @@ export class Instance implements Disposable {
   }
 
   private createPackedFuncFromCFunc(
-    func: ctypes.FTVMWasmPackedCFunc
+    func: ctypes.FTVMWasmPackedCFunc,
   ): PackedFunc {
     let findex = this.env.packedCFuncTable.length;
     if (this.env.packedCFuncTableFreeId.length != 0) {
@@ -2089,8 +2209,8 @@ export class Instance implements Disposable {
       (this.exports
         .TVMWasmFuncCreateFromCFunc as ctypes.FTVMWasmFuncCreateFromCFunc)(
           findex,
-          outPtr
-        )
+          outPtr,
+        ),
     );
     const ret = this.makePackedFunc(this.memory.loadPointer(outPtr));
     this.lib.recycleCallStack(stack);
@@ -2110,7 +2230,7 @@ export class Instance implements Disposable {
     stack: CachedCallStack,
     args: Array<any>,
     argsValue: PtrOffset,
-    argsCode: PtrOffset
+    argsCode: PtrOffset,
   ): void {
     for (let i = 0; i < args.length; ++i) {
       let val = args[i];
@@ -2182,7 +2302,7 @@ export class Instance implements Disposable {
       nargs: number,
       ret: Pointer,
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      _handle: Pointer
+      _handle: Pointer,
     ): number => {
       const jsArgs = [];
       // use scope to track js values.
@@ -2202,8 +2322,8 @@ export class Instance implements Disposable {
           lib.checkCall(
             (lib.exports.TVMCbArgToReturn as ctypes.FTVMCbArgToReturn)(
               valuePtr,
-              codePtr
-            )
+              codePtr,
+            ),
           );
         }
         tcode = lib.memory.loadI32(codePtr);
@@ -2227,8 +2347,8 @@ export class Instance implements Disposable {
             ret,
             valuePtr,
             codePtr,
-            1
-          )
+            1,
+          ),
         );
         lib.recycleCallStack(stack);
       }
@@ -2262,11 +2382,15 @@ export class Instance implements Disposable {
           stack.ptrFromOffset(tcodeOffset),
           args.length,
           rvaluePtr,
-          rcodePtr
-        )
+          rcodePtr,
+        ),
       );
 
-      const ret = this.retValueToJS(rvaluePtr, this.memory.loadI32(rcodePtr), false);
+      const ret = this.retValueToJS(
+        rvaluePtr,
+        this.memory.loadI32(rcodePtr),
+        false,
+      );
       this.lib.recycleCallStack(stack);
       return ret;
     };
@@ -2287,7 +2411,11 @@ export class Instance implements Disposable {
    * @param callbackArg Whether it is being used in callbackArg.
    * @returns The JS value.
    */
-  private retValueToJS(rvaluePtr: Pointer, tcode: number, callbackArg: boolean): any {
+  private retValueToJS(
+    rvaluePtr: Pointer,
+    tcode: number,
+    callbackArg: boolean,
+  ): any {
     switch (tcode) {
       case ArgTypeCode.Int:
       case ArgTypeCode.UInt:
@@ -2299,17 +2427,27 @@ export class Instance implements Disposable {
       }
       case ArgTypeCode.TVMNDArrayHandle: {
         return this.ctx.attachToCurrentScope(
-          new NDArray(this.memory.loadPointer(rvaluePtr), false, this.lib, this.ctx)
+          new NDArray(
+            this.memory.loadPointer(rvaluePtr),
+            false,
+            this.lib,
+            this.ctx,
+          ),
         );
       }
       case ArgTypeCode.TVMDLTensorHandle: {
         assert(callbackArg);
         // no need to attach as we are only looking at view
-        return new NDArray(this.memory.loadPointer(rvaluePtr), true, this.lib, this.ctx);
+        return new NDArray(
+          this.memory.loadPointer(rvaluePtr),
+          true,
+          this.lib,
+          this.ctx,
+        );
       }
       case ArgTypeCode.TVMPackedFuncHandle: {
         return this.ctx.attachToCurrentScope(
-          this.makePackedFunc(this.memory.loadPointer(rvaluePtr))
+          this.makePackedFunc(this.memory.loadPointer(rvaluePtr)),
         );
       }
       case ArgTypeCode.TVMModuleHandle: {
@@ -2319,26 +2457,27 @@ export class Instance implements Disposable {
             this.lib,
             (ptr: Pointer) => {
               return this.ctx.attachToCurrentScope(this.makePackedFunc(ptr));
-            }
-          )
+            },
+          ),
         );
       }
       case ArgTypeCode.TVMObjectHandle: {
         const obj = new TVMObject(
           this.memory.loadPointer(rvaluePtr),
           this.lib,
-          this.ctx
+          this.ctx,
         );
-        const func = this.objFactory.get(obj.typeIndex())
-        if (func != undefined) {
+        const func = this.objFactory.get(obj.typeIndex());
+        if (func) {
           return this.ctx.attachToCurrentScope(
-            func(obj.getHandle(), this.lib, this.ctx)
+            func(obj.getHandle(), this.lib, this.ctx),
           );
         } else {
           return this.ctx.attachToCurrentScope(obj);
         }
       }
-      case ArgTypeCode.Null: return undefined;
+      case ArgTypeCode.Null:
+        return undefined;
       case ArgTypeCode.DLDevice: {
         const deviceType = this.memory.loadI32(rvaluePtr);
         const deviceId = this.memory.loadI32(rvaluePtr + SizeOf.I32);
@@ -2372,20 +2511,20 @@ export class Instance implements Disposable {
 export function instantiate(
   bufferSource: ArrayBuffer,
   importObject: Record<string, any> = {},
-  logger: (msg: string) => void = console.log
+  logger: (msg: string) => void = console.log,
 ): Promise<Instance> {
   const env = new Environment(importObject, logger);
 
   return WebAssembly.instantiate(bufferSource, env.imports).then(
     (result: WebAssembly.WebAssemblyInstantiatedSource): Instance => {
       return new Instance(result.module, {}, result.instance, env);
-    }
+    },
   );
 }
 
 export async function hasNDArrayInCache(
   ndarrayCacheUrl: string,
-  cacheScope = "tvmjs"
+  cacheScope = "tvmjs",
 ): Promise<boolean> {
   const artifactCache = new ArtifactCache(cacheScope);
   const jsonUrl = new URL("ndarray-cache.json", ndarrayCacheUrl).href;
@@ -2399,5 +2538,7 @@ export async function hasNDArrayInCache(
     list = await result.json();
   }
   list = list["records"] as Array<NDArrayShardEntry>;
-  return await artifactCache.hasAllKeys(list.map(key => new URL(key.dataPath, ndarrayCacheUrl).href));
+  return await artifactCache.hasAllKeys(
+    list.map((key) => new URL(key.dataPath, ndarrayCacheUrl).href),
+  );
 }
