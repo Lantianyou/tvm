@@ -20,8 +20,8 @@
 /**
  * Example code to start the RPC server on nodejs using WASI
  */
-const { WASI } = require("wasi");
-const tvmjs = require("../../dist");
+import {WASI} from 'wasi'
+import * as tvmjs from '../../build/index.js';
 
 // Get import returns a fresh library in each call.
 const getImports = () => {

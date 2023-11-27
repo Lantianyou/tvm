@@ -6,18 +6,19 @@
   "files": [
     "lib"
   ],
-  "main": "lib/index.js",
+  "type": "module",
+  "main": "./build/index.js",
+  "typings": "./index.d.ts",
   "types": "lib/index.d.ts",
   "scripts": {
     "prepwasm": "make && python3 tests/python/prepare_test_libs.py",
-    "build": "rollup -c",
+    "build": "tsup",
     "lint": "eslint -c .eslintrc.json .",
     "typedoc": "typedoc src/index.ts --plugin typedoc-plugin-missing-exports",
     "test": "jest",
-    "bundle": "npm run build && cp lib/index.js dist/index.js && cp lib/index.js dist/tvmjs.bundle.js",
-    "example": "npm run bundle && node apps/node/example.js",
-    "example:wasi": "npm run bundle && node --experimental-wasi-unstable-preview1 --experimental-wasm-bigint apps/node/wasi_example.js",
-    "rpc": "npm run bundle && node --experimental-wasi-unstable-preview1  --experimental-wasm-bigint apps/node/wasi_rpc_server.js"
+    "example": "npm run build && node apps/node/example.js",
+    "example:wasi": "npm run build && node --experimental-wasi-unstable-preview1  apps/node/wasi_example.js",
+    "rpc": "npm run bundle && node --experimental-wasi-unstable-preview1 apps/node/wasi_rpc_server.js"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^20.0.0",
